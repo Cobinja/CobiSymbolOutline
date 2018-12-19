@@ -1,0 +1,131 @@
+{
+    "name": "cobi-symbol-outline",
+    "displayName": "CobiSymbolOutline",
+    "description": "A symbol outline tree provider for VSCode",
+    "version": "1.0.0",
+    "publisher": "Cobinja",
+    "homepage": "https://github.com/Cobinja/CobiSymbolOutline",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Cobinja/CobiSymbolOutline"
+    },
+    "license": "MIT",
+    "icon": "resources/icon.png",
+    "galleryBanner": {
+        "color": "#292d3e",
+        "theme": "dark"
+    },
+    "engines": {
+        "vscode": "^1.23.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "onView:cobiSymbolOutline"
+    ],
+    "main": "./out/src/extension",
+    "contributes": {
+        "commands": [
+            {
+                "command": "cobiSymbolOutline.refresh",
+                "title": "Refresh CobiSymbolOutline",
+                "icon": {
+                    "dark": "resources/dark/icon-refresh.svg",
+                    "light": "resources/light/icon-refresh.svg"
+                }
+            },
+            {
+                "command": "cobiSymbolOutline.revealCurrentSymbol",
+                "title": "Show in CobiSymbolOutline"
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "outline",
+                    "title": "Outline",
+                    "icon": "resources/icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "outline": [
+                {
+                    "id": "cobiSymbolOutline",
+                    "name": "CobiSymbolOutline"
+                }
+            ]
+        },
+        "menus": {
+            "editor/context": [
+                {
+                    "command": "cobiSymbolOutline.revealCurrentSymbol",
+                    "group": "navigation"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "cobiSymbolOutline.refresh",
+                    "when": "view == cobiSymbolOutline",
+                    "group": "navigation"
+                }
+            ]
+        },
+        "configuration": {
+            "type": "object",
+            "title": "CobiSymbolOutline configuration",
+            "properties": {
+                "cobiSymbolOutline.expandableNodes": {
+                    "type": "array",
+                    "default": [
+                        "File",
+                        "Module",
+                        "Namespace",
+                        "Package",
+                        "Class",
+                        "Enum",
+                        "Interface",
+                        "Object",
+                        "Struct"
+                    ],
+                    "description": "Kinds of nodes that show their children."
+                },
+                "cobiSymbolOutline.sortOrder": {
+                    "type": "array",
+                    "default": [
+                        "Class",
+                        "Module",
+                        "Constant",
+                        "Interface",
+                        "*",
+                        "Constructor",
+                        "Function",
+                        "Method"
+                    ],
+                    "description": "Order to the sort symbols in, if sorted.  * is placeholder for all symbols not explicitly listed."
+                },
+                "cobiSymbolOutline.topLevel": {
+                    "type": "array",
+                    "default": [
+                        "*"
+                    ],
+                    "description": "Which symbols to include at the topmost scope.  * includes everything."
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "tsc -p ./",
+        "compile": "tsc -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "node ./node_modules/vscode/bin/test"
+    },
+    "devDependencies": {
+        "@types/mocha": "^2.2.48",
+        "@types/node": "^6.14.2",
+        "mocha": "^5.2.0",
+        "typescript": "^2.9.2",
+        "vscode": "^1.1.26"
+    }
+}

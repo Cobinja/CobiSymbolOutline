@@ -110,17 +110,17 @@ export class CobiSymbolOutlineTreeDataProvider
     if (editor) {
       readOpts();
       let symbols = await this.getSymbols(editor.document);
-      if (optsTopLevel.indexOf(-1) < 0) {
-        symbols = symbols.filter(sym => optsTopLevel.indexOf(sym.kind) >= 0);
+      if (!!symbols) {
+        if (optsTopLevel.indexOf(-1) < 0) {
+          symbols = symbols.filter(sym => optsTopLevel.indexOf(sym.kind) >= 0);
+        }
+        const symbolNodes = symbols.map(symbol => new CobiSymbolNode(symbol));
+        symbolNodes.sort(this.compareSymbols);
+        symbolNodes.forEach(currentNode => {
+          tree.addChild(currentNode);
+        });
+        tree.sort();
       }
-      // Create symbol nodes
-      const symbolNodes = symbols.map(symbol => new CobiSymbolNode(symbol));
-      // Sort nodes by left edge ascending and right edge descending
-      symbolNodes.sort(this.compareSymbols);
-      symbolNodes.forEach(currentNode => {
-        tree.addChild(currentNode);
-      });
-      tree.sort();
     }
     this.tree = tree;
   }
@@ -225,13 +225,12 @@ function readOpts() {
   optsTopLevel = convertNamesToEnumValues(opts.get<string[]>("topLevel"));
 }
 
-function convertEnumValueToName(val: number): string | null {
-  return null;
-}
-
 function convertNamesToEnumValues(names: string[]): number[] {
-  return names.map(str => {
-    let v = SymbolKind[str];
-    return typeof v == "undefined" ? -1 : v;
-  });
+  if (!!names) {
+    return names.map(str => {
+      let v = SymbolKind[str];
+      return typeof v == "undefined" ? -1 : v;
+    });
+  }
+  return [];
 }

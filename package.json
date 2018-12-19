@@ -2,7 +2,7 @@
     "name": "cobi-symbol-outline",
     "displayName": "CobiSymbolOutline",
     "description": "A symbol outline tree provider for VSCode",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "publisher": "Cobinja",
     "homepage": "https://github.com/Cobinja/CobiSymbolOutline",
     "repository": {

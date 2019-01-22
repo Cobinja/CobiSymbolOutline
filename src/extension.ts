@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 
-import { CobiSymbolOutlineProvider } from "./symbolOutline";
+import { initSymbolOutline as init } from "./cobiSymbolOutline";
 
 export function activate(context: vscode.ExtensionContext) {
-  const cobiSymbolOutlineProvider = new CobiSymbolOutlineProvider(context);
+  init(context);
 }

@@ -2,7 +2,7 @@
     "name": "cobi-symbol-outline",
     "displayName": "CobiSymbolOutline",
     "description": "A symbol outline tree provider for VSCode",
-    "version": "1.0.1",
+    "version": "2.0.0",
     "publisher": "Cobinja",
     "homepage": "https://github.com/Cobinja/CobiSymbolOutline",
     "repository": {
@@ -16,13 +16,13 @@
         "theme": "dark"
     },
     "engines": {
-        "vscode": "^1.23.0"
+        "vscode": "^1.30.0"
     },
     "categories": [
         "Other"
     ],
     "activationEvents": [
-        "onView:cobiSymbolOutline"
+        "*"
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -37,7 +37,7 @@
             },
             {
                 "command": "cobiSymbolOutline.revealCurrentSymbol",
-                "title": "Show in CobiSymbolOutline"
+                "title": "Reveal in CobiSymbolOutline"
             }
         ],
         "viewsContainers": {
@@ -87,9 +87,10 @@
                         "Enum",
                         "Interface",
                         "Object",
-                        "Struct"
+                        "Struct",
+                        "Field"
                     ],
-                    "description": "Kinds of nodes that show their children."
+                    "description": "Defines which kinds of nodes show their children."
                 },
                 "cobiSymbolOutline.sortOrder": {
                     "type": "array",
@@ -98,19 +99,29 @@
                         "Module",
                         "Constant",
                         "Interface",
-                        "*",
                         "Constructor",
                         "Function",
-                        "Method"
+                        "Method",
+                        "*"
                     ],
-                    "description": "Order to the sort symbols in, if sorted.  * is placeholder for all symbols not explicitly listed."
+                    "description": "Defines the order to the sort symbols in, if sorted by type.  * is placeholder for all symbols not explicitly listed."
                 },
                 "cobiSymbolOutline.topLevel": {
                     "type": "array",
                     "default": [
                         "*"
                     ],
-                    "description": "Which symbols to include at the topmost scope.  * includes everything."
+                    "description": "Defines which symbols to include at the topmost scope.  * includes everything."
+                },
+                "cobiSymbolOutline.sortBy": {
+                    "type": "string",
+                    "enum": [
+                        "Kind",
+                        "Name",
+                        "Position"
+                    ],
+                    "default": "Kind",
+                    "description": "Defines by which property symbols are sorted.\nIf \"Kind\" is used, symbols are sorted according to the \"Sort Order\" setting.\nIf a property other than \"Name\" is used, symbols with matching properties are also sorted by name.\n"
                 }
             }
         }
@@ -119,13 +130,20 @@
         "vscode:prepublish": "tsc -p ./",
         "compile": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "node ./node_modules/vscode/bin/test"
+        "test": "node ./node_modules/vscode/bin/test",
+        "clean": "rimraf out/"
     },
     "devDependencies": {
+        "@types/deep-equal": "^1.0.1",
+        "@types/lodash": "^4.14.120",
         "@types/mocha": "^2.2.48",
         "@types/node": "^6.14.2",
         "mocha": "^5.2.0",
+        "rimraf": "^2.6.3",
         "typescript": "^2.9.2",
-        "vscode": "^1.1.26"
+        "vscode": "^1.1.27"
+    },
+    "dependencies": {
+        "deep-equal": "^1.0.1"
     }
 }

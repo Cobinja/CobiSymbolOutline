@@ -43,7 +43,7 @@ Default settings:
 
 ```json
 {
-  "symbolOutline.expandableNodes": {
+  "cobiSymbolOutline.expandableNodes": {
     "type": "array",
     "default": [
       "File",
@@ -58,7 +58,7 @@ Default settings:
     ],
     "description": "Kinds of nodes that show their children."
   },
-  "symbolOutline.sortOrder": {
+  "cobiSymbolOutline.sortOrder": {
     "type": "array",
     "default": [
       "Class",
@@ -72,7 +72,7 @@ Default settings:
     ],
     "description": "Order to the sort symbols in, if sorted.  * is placeholder for all symbols not explicitly listed."
   },
-  "symbolOutline.topLevel": {
+  "cobiSymbolOutline.topLevel": {
     "type": "array",
     "default": [
       "*"
@@ -88,4 +88,4 @@ Default settings:
 
 ## Known Issues
 
-Depending on other extensions you have installed the symbol list may initially return an empty list. Use the "Refresh" button next to the title to fix this.
+In some cases the symbol list may initially return an empty list. Use the "Refresh" button next to the title to fix this.

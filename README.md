@@ -1,6 +1,6 @@
 # CobiSymbolOutline -- A symbol tree provider for Visual Studio Code
 
-This a fork of the deprecated and unpublished Visual Studio Code extension vscode-code-outline by https://github.com/patrys
+This is a fork of the deprecated and unpublished Visual Studio Code extension vscode-code-outline by https://github.com/patrys
 
 ## Features
 
@@ -70,21 +70,21 @@ Default settings:
       "Function",
       "Method"
     ],
-    "description": "Order to the sort symbols in, if sorted.  * is placeholder for all symbols not explicitly listed."
+    "description": "Order to sort symbols in. * is placeholder for all symbols not explicitly listed."
   },
   "cobiSymbolOutline.topLevel": {
     "type": "array",
     "default": [
       "*"
     ],
-    "description": "Which symbols to include at the topmost scope.  * includes everything."
+    "description": "Which symbols to include at the topmost level. * includes everything."
   }
 }
 ```
 
 - **expandableNodes:** Kinds of nodes that show their children.
-- **sortOrder:** order symbol sorting.
-- **topLevel:** wich symbols are included at the topmost scope.
+- **sortOrder:** Order to sort symbols in.
+- **topLevel:** Which symbols are included at the topmost scope.
 
 ## Known Issues
 

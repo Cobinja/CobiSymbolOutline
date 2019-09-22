@@ -224,6 +224,8 @@ class CobiTree {
   
   dispose() {
     this.root.dispose();
+    this.document = null;
+    this.owner = null;
     this.root = null;
   }
 }
@@ -334,7 +336,7 @@ class CobiTreeDataProvider implements TreeDataProvider<CobiTreeItem> {
   removeDocument(document: TextDocument) {
     let {tree, index} = this.findTreeForDocument(document);
     if (tree) {
-      tree.root.clear();
+      tree.dispose();
       this.trees.splice(index, 1);
     }
   }

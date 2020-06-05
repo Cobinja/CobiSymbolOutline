@@ -92,6 +92,12 @@
                     ],
                     "description": "Defines which kinds of nodes show their children."
                 },
+                "cobiSymbolOutline.neverShowNodes": {
+                    "type": "array",
+                    "default": [
+                    ],
+                    "description": "Defines which kinds of nodes should not ever be shown in outline."
+                },
                 "cobiSymbolOutline.sortOrder": {
                     "type": "array",
                     "default": [

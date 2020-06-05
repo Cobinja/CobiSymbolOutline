@@ -78,11 +78,18 @@ Default settings:
       "*"
     ],
     "description": "Which symbols to include at the topmost level. * includes everything."
-  }
+  },
+  "cobiSymbolOutline.neverShowNodes": {
+    "type": "array",
+    "default": [
+    ],
+    "description": "Defines which kinds of nodes should not ever be shown in outline."
+  },
 }
 ```
 
 - **expandableNodes:** Kinds of nodes that show their children.
+- **neverShowNodes:** Kinds of nodes that never get shown (filtered out).
 - **sortOrder:** Order to sort symbols in.
 - **topLevel:** Which symbols are included at the topmost scope.
 

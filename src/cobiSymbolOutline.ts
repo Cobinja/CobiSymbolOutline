@@ -28,6 +28,8 @@ import { getIcon } from "./icons";
 let optsSortOrder: number[] = [];
 let optsTopLevel: number[] = [];
 let optsExpandableNodes: number[] = [];
+let optsNeverShowNodes: number[] = [];
+let optsNeverShowMap: {[k:number]:boolean} = {};
 let optsSortBy: any = null;
 let context: ExtensionContext;
 let treeView: TreeView<CobiTreeItem>;
@@ -38,6 +40,7 @@ enum OptsChanges {
   SORT_BY = 1 << 1,
   TOP_LEVEL = 1 << 2,
   EXPANDABLE_NODES = 1 << 3,
+  NEVER_SHOW_NODES = 1 << 4,
 }
 
 function convertNamesToEnumValues(names: string[]): number[] {
@@ -106,6 +109,14 @@ function readOpts(): number {
   if (!deepEqual(newExpandableNodes, optsExpandableNodes)) {
     optsExpandableNodes = newExpandableNodes;
     changed = changed | OptsChanges.EXPANDABLE_NODES;
+  }
+  
+  let newNeverShowNodes = convertNamesToEnumValues(opts.get<string[]>("neverShowNodes"));
+  if (!deepEqual(newNeverShowNodes, optsNeverShowNodes)) {
+    optsNeverShowNodes = newNeverShowNodes;
+    optsNeverShowMap = {};
+    optsNeverShowNodes.forEach(x => optsNeverShowMap[x] = true);
+    changed = changed | OptsChanges.NEVER_SHOW_NODES;
   }
   
   let newTopLevel = convertNamesToEnumValues(opts.get<string[]>("topLevel"));
@@ -200,12 +211,8 @@ class CobiTree {
       this.getSymbols()
       .then(symbols => {
         if (symbols) {
-          symbols.forEach((symbol: DocumentSymbol) => {
-            let showTopLevel = (optsTopLevel.indexOf(-1) >= 0) ||
-              (optsTopLevel.indexOf(symbol.kind) >= 0);
-            if (showTopLevel) {
-              this.root.addChild(symbol);
-            }
+          this.filtered(symbols, true).forEach((symbol: DocumentSymbol) => {
+             this.root.addChild(symbol);
           });
           this.root.sort();
         }
@@ -213,6 +220,22 @@ class CobiTree {
         this.owner.refreshView();
       });
     }
+  }
+
+  filtered(symbols:DocumentSymbol[], topLevel:boolean):DocumentSymbol[] {
+     if (!symbols || symbols.length == 0) return [];
+     let res:DocumentSymbol[] = [];
+     for (let s of symbols) {
+         if (topLevel) {
+            let showTopLevel = (optsTopLevel.indexOf(-1) >= 0) || (optsTopLevel.indexOf(s.kind) >= 0);
+            if (!showTopLevel) continue;
+         }
+         if (optsNeverShowMap[s.kind]) continue;
+         let s2 = new DocumentSymbol(s.name, s.detail, s.kind, s.range, s.selectionRange);
+         s2.children = this.filtered(s.children, false);
+         res.push(s2);
+     }
+     return res;
   }
   
   getSymbols(): Thenable<DocumentSymbol[]> {

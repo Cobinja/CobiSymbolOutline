@@ -191,26 +191,39 @@ class CobiTree {
   
   constructor(public document: TextDocument, public owner: CobiTreeDataProvider) { }
   
+  private doRefresh(): Thenable<void> {
+    return this.getSymbols()
+    .then(symbols => {
+      if (symbols) {
+        symbols.forEach((symbol: DocumentSymbol) => {
+          let showTopLevel = (optsTopLevel.indexOf(-1) >= 0) ||
+            (optsTopLevel.indexOf(symbol.kind) >= 0);
+          if (showTopLevel) {
+            this.root.addChild(symbol);
+          }
+        });
+        this.root.sort();
+      }
+      this.loading = false;
+      this.owner.refreshView();
+    });
+  }
+  
   refreshSymbols() {
     if (!this.loading) {
       this.loading = true;
       this.root.dispose();
       this.root = new CobiTreeItem();
       this.owner.refreshView();
-      this.getSymbols()
-      .then(symbols => {
-        if (symbols) {
-          symbols.forEach((symbol: DocumentSymbol) => {
-            let showTopLevel = (optsTopLevel.indexOf(-1) >= 0) ||
-              (optsTopLevel.indexOf(symbol.kind) >= 0);
-            if (showTopLevel) {
-              this.root.addChild(symbol);
-            }
-          });
-          this.root.sort();
+      // Initial load fails if the langaguage server is not yet started, so do it twice
+      this.doRefresh()
+      .then(() => {
+        if (this.root.children.length == 0) {
+          // Wait 1 second before trying again
+          setTimeout(() => {
+            this.doRefresh();
+          }, 1000);
         }
-        this.loading = false;
-        this.owner.refreshView();
       });
     }
   }

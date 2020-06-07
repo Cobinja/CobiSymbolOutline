@@ -29,6 +29,7 @@ let optsSortOrder: number[] = [];
 let optsTopLevel: number[] = [];
 let optsExpandableNodes: number[] = [];
 let optsSortBy: any = null;
+let optsHidden: number[] = [];
 let context: ExtensionContext;
 let treeView: TreeView<CobiTreeItem>;
 
@@ -38,6 +39,7 @@ enum OptsChanges {
   SORT_BY = 1 << 1,
   TOP_LEVEL = 1 << 2,
   EXPANDABLE_NODES = 1 << 3,
+  HIDDEN_SYMBOLS = 1 << 4,
 }
 
 function convertNamesToEnumValues(names: string[]): number[] {
@@ -120,6 +122,12 @@ function readOpts(): number {
     changed = changed | OptsChanges.SORT_ORDER;
   }
   
+  let newHidden = convertNamesToEnumValues(opts.get<string[]>("hiddenNodes"));
+  if (!deepEqual(newHidden, optsHidden)) {
+    optsHidden = newHidden;
+    changed = changed | OptsChanges.HIDDEN_SYMBOLS;
+  }
+  
   let newSortBy = opts.get<string>("sortBy");
   let newFn = null;
   switch (newSortBy) {
@@ -164,9 +172,12 @@ class CobiTreeItem extends TreeItem {
   }
   
   addChild(child: DocumentSymbol) {
-    let newChild = new CobiTreeItem(child);
-    newChild.parent = this;
-    this.children.push(newChild);
+    let hidden = (optsHidden.indexOf(child.kind) >= 0);
+    if (!hidden) {
+      let newChild = new CobiTreeItem(child);
+      newChild.parent = this;
+      this.children.push(newChild);
+    }
   }
   
   dispose() {

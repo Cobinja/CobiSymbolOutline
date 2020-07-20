@@ -1,5 +1,12 @@
 # Change Log
 
+## 3.0.0
+
+- Updated dependencies
+- Allow language specific settings
+- Added setting to hide symbols
+- Added a delayed second initial load if the first one did not receive any symbols
+
 ## 2.0.3
 
 - Updates dependencies

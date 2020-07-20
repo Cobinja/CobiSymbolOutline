@@ -2,7 +2,7 @@
     "name": "cobi-symbol-outline",
     "displayName": "CobiSymbolOutline",
     "description": "A symbol outline tree provider for VSCode",
-    "version": "2.0.3",
+    "version": "3.0.0",
     "publisher": "Cobinja",
     "homepage": "https://github.com/Cobinja/CobiSymbolOutline",
     "repository": {
@@ -16,7 +16,7 @@
         "theme": "dark"
     },
     "engines": {
-        "vscode": "^1.30.0"
+        "vscode": "^1.46.0"
     },
     "categories": [
         "Other"
@@ -90,7 +90,8 @@
                         "Struct",
                         "Field"
                     ],
-                    "description": "Defines which kinds of nodes show their children."
+                    "description": "Defines which kinds of nodes show their children.",
+                    "scope": "language-overridable"
                 },
                 "cobiSymbolOutline.sortOrder": {
                     "type": "array",
@@ -104,14 +105,22 @@
                         "Method",
                         "*"
                     ],
-                    "description": "Defines the order to the sort symbols in, if sorted by type.  * is placeholder for all symbols not explicitly listed."
+                    "description": "Defines the order to the sort symbols in, if sorted by type.  * is placeholder for all symbols not explicitly listed.",
+                    "scope": "language-overridable"
                 },
                 "cobiSymbolOutline.topLevel": {
                     "type": "array",
                     "default": [
                         "*"
                     ],
-                    "description": "Defines which symbols to include at the topmost scope.  * includes everything."
+                    "description": "Defines which symbols to include at the topmost scope.  * includes everything.",
+                    "scope": "language-overridable"
+                },
+                "cobiSymbolOutline.hiddenNodes": {
+                    "type": "array",
+                    "default": [],
+                    "description": "Defines which symbols are hidden.",
+                    "scope": "language-overridable"
                 },
                 "cobiSymbolOutline.sortBy": {
                     "type": "string",
@@ -127,10 +136,12 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "tsc -p ./",
-        "compile": "tsc -watch -p ./",
-        "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "node ./node_modules/vscode/bin/test",
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "lint": "eslint src --ext ts",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "test": "node ./out/test/runTest.js",
         "clean": "rimraf out/"
     },
     "devDependencies": {
@@ -138,12 +149,13 @@
         "@types/lodash": "^4.14.144",
         "@types/mocha": "^2.2.48",
         "@types/node": "^6.14.9",
+        "@types/vscode": "^1.46.0",
         "mocha": "^5.2.0",
         "rimraf": "^2.6.3",
         "typescript": "^2.9.2",
-        "vscode": "^1.1.27"
+        "vscode-test": "^1.4.0"
     },
     "dependencies": {
-        "deep-equal": "^1.0.1"
+        "deep-equal": "^2.0.3"
     }
 }

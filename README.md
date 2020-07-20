@@ -39,6 +39,13 @@ Please report any missing extensions and I'll update the list.
 
 ## Extension Settings
 
+- **expandableNodes:** Kinds of nodes that show their children.
+- **sortOrder:** Order to sort symbols in.
+- **sortBy:** Sort by kind, name or position. If something other than name, symbols with matching properties are also sorted by name.
+- **topLevel:** Which symbols are included at the topmost scope.
+- **hiddenNodes:** List of symbol kinds that are hidden.
+- **fallbackLoadDelay:** Time in milliseconds to delay the second load if the first one does not receive any symbols. Set to "-1" do disable the second load.
+
 Default settings:
 
 ```json
@@ -78,13 +85,33 @@ Default settings:
       "*"
     ],
     "description": "Which symbols to include at the topmost level. * includes everything."
+  },
+  "cobiSymbolOutline.hiddenNodes": {
+      "type": "array",
+      "default": [],
+      "description": "Defines which symbols are hidden.",
+      "scope": "language-overridable"
+  },
+  "cobiSymbolOutline.sortBy": {
+      "type": "string",
+      "enum": [
+          "Kind",
+          "Name",
+          "Position"
+      ],
+      "default": "Kind",
+      "description": "Defines by which property symbols are sorted.\nIf \"Kind\" is used, symbols are sorted according to the \"Sort Order\" setting.\nIf a property other than \"Name\" is used, symbols with matching properties are also sorted by name.",
+      "scope": "language-overridable"
+  },
+  "cobiSymbolOutline.fallbackLoadDelay": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 1000,
+      "description": "Defines the delay in milliseconds of the second load if the first one fails. Set to\"-1\" to disable the second load",
+      "scope": "language-overridable"
   }
 }
 ```
-
-- **expandableNodes:** Kinds of nodes that show their children.
-- **sortOrder:** Order to sort symbols in.
-- **topLevel:** Which symbols are included at the topmost scope.
 
 ## Known Issues
 

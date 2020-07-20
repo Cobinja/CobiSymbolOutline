@@ -17,7 +17,9 @@ import {
   window,
   workspace,
   Position,
-  ProviderResult
+  ProviderResult,
+  WorkspaceConfiguration,
+  ConfigurationChangeEvent
 } from "vscode";
 
 import * as path from "path";
@@ -25,21 +27,18 @@ import deepEqual = require("deep-equal");
 
 import { getIcon } from "./icons";
 
-let optsSortOrder: number[] = [];
-let optsTopLevel: number[] = [];
-let optsExpandableNodes: number[] = [];
-let optsSortBy: any = null;
-let optsHidden: number[] = [];
 let context: ExtensionContext;
 let treeView: TreeView<CobiTreeItem>;
 
-enum OptsChanges {
-  NONE = 0,
-  SORT_ORDER = 1 << 0,
-  SORT_BY = 1 << 1,
-  TOP_LEVEL = 1 << 2,
-  EXPANDABLE_NODES = 1 << 3,
-  HIDDEN_SYMBOLS = 1 << 4,
+type CompareFn = (a: CobiTreeItem, b: CobiTreeItem) => number;
+
+interface Settings {
+  sortOrder?: number[];
+  topLevel?: number[];
+  expandableNodes?: number[];
+  sortBy?: string;
+  hidden?: number[];
+  fallbackLoadDelay?: number;
 }
 
 function convertNamesToEnumValues(names: string[]): number[] {
@@ -59,16 +58,8 @@ function convertNamesToEnumValues(names: string[]): number[] {
   return result;
 }
 
-function getKindOrder(kind: SymbolKind): number {
-  let ix = optsSortOrder.indexOf(kind);
-  if (ix < 0) {
-    ix = optsSortOrder.indexOf(-1);
-  }
-  return ix;
-}
-
 function compareByKind(a: CobiTreeItem, b: CobiTreeItem): number {
-  let kindOrder = getKindOrder(a.symbol.kind) - getKindOrder(b.symbol.kind);
+  let kindOrder = a.getKindOrder() - b.getKindOrder();
   if (kindOrder !== 0) {
     return kindOrder;
   }
@@ -79,7 +70,7 @@ function compareByKind(a: CobiTreeItem, b: CobiTreeItem): number {
   return compareByName(a, b);
 }
 
-function compareByRange(a: CobiTreeItem, b: CobiTreeItem) {
+function compareByRange(a: CobiTreeItem, b: CobiTreeItem): number {
   let result = a.symbol.range.start.compareTo(b.symbol.range.start);
   if (result === 0) {
     result = b.symbol.range.end.compareTo(a.symbol.range.end);
@@ -90,7 +81,7 @@ function compareByRange(a: CobiTreeItem, b: CobiTreeItem) {
   return result;
 }
 
-function compareByName(a: CobiTreeItem, b: CobiTreeItem) {
+function compareByName(a: CobiTreeItem, b: CobiTreeItem): number {
   if (a.symbol.name < b.symbol.name) {
     return -1;
   }
@@ -100,61 +91,25 @@ function compareByName(a: CobiTreeItem, b: CobiTreeItem) {
     return 0;
 }
 
-function readOpts(): number {
-  let changed = OptsChanges.NONE;
-  let opts = workspace.getConfiguration("cobiSymbolOutline");
+function readSettings(document?: TextDocument): Settings {
+  let result: Settings = {} as Settings;
+  let opts: WorkspaceConfiguration = workspace.getConfiguration("cobiSymbolOutline", document);;
   
-  let newExpandableNodes = convertNamesToEnumValues(opts.get<string[]>("expandableNodes"));
-  if (!deepEqual(newExpandableNodes, optsExpandableNodes)) {
-    optsExpandableNodes = newExpandableNodes;
-    changed = changed | OptsChanges.EXPANDABLE_NODES;
-  }
+  result.expandableNodes = convertNamesToEnumValues(opts.get<string[]>("expandableNodes"));
+  result.topLevel = convertNamesToEnumValues(opts.get<string[]>("topLevel"));
+  result.sortOrder = convertNamesToEnumValues(opts.get<string[]>("sortOrder"));
+  result.hidden = convertNamesToEnumValues(opts.get<string[]>("hiddenNodes"));
+  result.sortBy = opts.get<string>("sortBy");
+  result.fallbackLoadDelay = opts.get<number>("fallbackLoadDelay");
   
-  let newTopLevel = convertNamesToEnumValues(opts.get<string[]>("topLevel"));
-  if (!deepEqual(newTopLevel, optsTopLevel)) {
-    optsTopLevel = newTopLevel;
-    changed = changed | OptsChanges.TOP_LEVEL;
-  }
-  
-  let newSortOrder = convertNamesToEnumValues(opts.get<string[]>("sortOrder"));
-  if (!deepEqual(newSortOrder, optsSortOrder)) {
-    optsSortOrder = newSortOrder;
-    changed = changed | OptsChanges.SORT_ORDER;
-  }
-  
-  let newHidden = convertNamesToEnumValues(opts.get<string[]>("hiddenNodes"));
-  if (!deepEqual(newHidden, optsHidden)) {
-    optsHidden = newHidden;
-    changed = changed | OptsChanges.HIDDEN_SYMBOLS;
-  }
-  
-  let newSortBy = opts.get<string>("sortBy");
-  let newFn = null;
-  switch (newSortBy) {
-    case "Name":
-      newFn = compareByName;
-      break;
-    case "Position":
-      newFn = compareByRange;
-      break;
-    case "Kind":
-    default:
-      newFn = compareByKind;
-      break;
-  }
-  if (optsSortBy !== newFn) {
-    optsSortBy = newFn;
-    changed = changed | OptsChanges.SORT_BY;
-  }
-  
-  return changed;
+  return result;
 }
 
 class CobiTreeItem extends TreeItem {
   public parent: CobiTreeItem = null;
   public children: CobiTreeItem[] = [];
   
-  constructor(public symbol?: DocumentSymbol) {
+  constructor(private tree: CobiTree, public symbol?: DocumentSymbol) {
     super(symbol ? symbol.name : "", TreeItemCollapsibleState.Collapsed);
     
     if (symbol) {
@@ -165,16 +120,16 @@ class CobiTreeItem extends TreeItem {
       symbol.children.forEach(child => {
         this.addChild(child);
       });
-      if (optsExpandableNodes.indexOf(kind) < 0 || this.children.length === 0) {
+      if (this.tree.settings.expandableNodes.indexOf(kind) < 0 || this.children.length === 0) {
         this.collapsibleState = TreeItemCollapsibleState.None;
       }
     }
   }
   
   addChild(child: DocumentSymbol) {
-    let hidden = (optsHidden.indexOf(child.kind) >= 0);
+    let hidden = (this.tree.settings.hidden.indexOf(child.kind) >= 0);
     if (!hidden) {
-      let newChild = new CobiTreeItem(child);
+      let newChild = new CobiTreeItem(this.tree, child);
       newChild.parent = this;
       this.children.push(newChild);
     }
@@ -188,32 +143,61 @@ class CobiTreeItem extends TreeItem {
     this.children = [];
   }
   
-  sort() {
-    this.children.sort(optsSortBy);
+  sort(sortBy: CompareFn) {
+    this.children.sort(sortBy);
     this.children.forEach(child => {
-      child.sort();
+      child.sort(sortBy);
     });
+  }
+  
+  getKindOrder(): number {
+    let sortOrder = this.tree.settings.sortOrder;
+    let result = sortOrder.indexOf(this.symbol.kind);
+    if (result < 0) {
+      result = sortOrder.indexOf(-1);
+    }
+    return result;
   }
 }
 
 class CobiTree {
-  public root: CobiTreeItem = new CobiTreeItem();
+  public root: CobiTreeItem = new CobiTreeItem(this);
   public loading: boolean = false;
+  public settings: Settings = null;
   
-  constructor(public document: TextDocument, public owner: CobiTreeDataProvider) { }
+  constructor(public document: TextDocument, public owner: CobiTreeDataProvider) {
+    this.settings = readSettings(document);
+  }
+  
+  public getCompareFunction(): CompareFn {
+    let result: CompareFn;
+    switch (this.settings.sortBy) {
+      case "Name":
+        result = compareByName;
+        break;
+      case "Position":
+        result = compareByRange;
+        break;
+      case "Kind":
+      default:
+        result = compareByKind;
+        break;
+    }
+    return result;
+  }
   
   private doRefresh(): Thenable<void> {
     return this.getSymbols()
     .then(symbols => {
       if (symbols) {
         symbols.forEach((symbol: DocumentSymbol) => {
-          let showTopLevel = (optsTopLevel.indexOf(-1) >= 0) ||
-            (optsTopLevel.indexOf(symbol.kind) >= 0);
+          let showTopLevel = (this.settings.topLevel.indexOf(-1) >= 0) ||
+            (this.settings.topLevel.indexOf(symbol.kind) >= 0);
           if (showTopLevel) {
             this.root.addChild(symbol);
           }
         });
-        this.root.sort();
+        this.root.sort(this.getCompareFunction());
       }
       this.loading = false;
       this.owner.refreshView();
@@ -224,16 +208,14 @@ class CobiTree {
     if (!this.loading) {
       this.loading = true;
       this.root.dispose();
-      this.root = new CobiTreeItem();
+      this.root = new CobiTreeItem(this);
       this.owner.refreshView();
-      // Initial load fails if the langaguage server is not yet started, so do it twice
       this.doRefresh()
       .then(() => {
-        if (this.root.children.length == 0) {
-          // Wait 1 second before trying again
+        if (this.root.children.length == 0 && this.settings.fallbackLoadDelay >= 0) {
           setTimeout(() => {
             this.doRefresh();
-          }, 1000);
+          }, this.settings.fallbackLoadDelay);
         }
       });
     }
@@ -246,11 +228,27 @@ class CobiTree {
     );
   }
   
+  onSettingsChanged(event: ConfigurationChangeEvent): void {
+    if (event && !(event.affectsConfiguration("cobiSymbolOutline", this.document))) {
+      return;
+    }
+    let newSettings: Settings = readSettings(this.document);
+    if (!deepEqual(this.settings, newSettings)) {
+      this.settings = newSettings;
+      this.refreshSymbols();
+    }
+  }
+  
   dispose() {
     this.root.dispose();
     this.document = null;
     this.owner = null;
     this.root = null;
+    this.settings = null;
+  }
+  
+  sort() {
+    this.root.sort(this.getCompareFunction());
   }
 }
 
@@ -260,7 +258,7 @@ class CobiTreeDataProvider implements TreeDataProvider<CobiTreeItem> {
   
   private trees: CobiTree[] = [];
   public currentTree: CobiTree = null;
-  public dummyTreeItem: CobiTreeItem = new CobiTreeItem();
+  public dummyTreeItem: CobiTreeItem = new CobiTreeItem(null);
   
   constructor() {
     this.dummyTreeItem.collapsibleState = TreeItemCollapsibleState.None;
@@ -282,13 +280,14 @@ class CobiTreeDataProvider implements TreeDataProvider<CobiTreeItem> {
   refreshView(sort?: boolean) {
     if (sort) {
       this.trees.forEach(tree => {
-        tree.root.sort();
+        tree.sort();
       });
     }
-    this._onDidChangeTreeData.fire();
+    this._onDidChangeTreeData.fire(null);
   }
   
   refreshSymbols(document?: TextDocument) {
+    // readOpts(document);
     let tree: CobiTree;
     if (document) {
       tree = this.findTreeForDocument(document).tree;
@@ -304,6 +303,12 @@ class CobiTreeDataProvider implements TreeDataProvider<CobiTreeItem> {
   refreshAllSymbols() {
     this.trees.forEach(tree => {
       tree.refreshSymbols();
+    });
+  }
+  
+  onSettingsChanged(event: ConfigurationChangeEvent) {
+    this.trees.forEach(tree => {
+      tree.onSettingsChanged(event);
     });
   }
   
@@ -401,7 +406,6 @@ class CobiTreeDataProvider implements TreeDataProvider<CobiTreeItem> {
 
 export function initSymbolOutline(ctx: ExtensionContext) {
   context = ctx;
-  readOpts();
   let treeDataProvider = new CobiTreeDataProvider();
   treeView = window.createTreeView("cobiSymbolOutline", {
     treeDataProvider,
@@ -413,15 +417,7 @@ export function initSymbolOutline(ctx: ExtensionContext) {
   context.subscriptions.push(workspace.onDidCloseTextDocument(document => treeDataProvider.removeDocument(document)));
   context.subscriptions.push(workspace.onDidChangeTextDocument(event => treeDataProvider.refreshSymbols(event.document)));
   context.subscriptions.push(workspace.onDidChangeConfiguration(event => {
-    if (event.affectsConfiguration("cobiSymbolOutline")) {
-      let changed = readOpts();
-      if (changed <= OptsChanges.SORT_BY) {
-        treeDataProvider.refreshView(true);
-      }
-      else if (changed !== OptsChanges.NONE) {
-        treeDataProvider.refreshAllSymbols();
-      }
-    }
+    treeDataProvider.onSettingsChanged(event);
   }));
   
   context.subscriptions.push(treeView.onDidExpandElement(event => {

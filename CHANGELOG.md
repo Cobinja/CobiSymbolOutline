@@ -1,5 +1,9 @@
 # Change Log
 
+## 3.0.1
+
+- Added the missing setting for the delayed second symbol load
+
 ## 3.0.0
 
 - Updated dependencies
